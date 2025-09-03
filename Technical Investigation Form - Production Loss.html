@@ -79,16 +79,80 @@
       flex: 1; 
       margin-right: 10px; 
     }
+    
+    /* Styl dla ekranu logowania */
+    #login-screen { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: #2c3e50; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+    }
+    .login-container { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px; 
+      width: 350px; 
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    }
+    .login-container h2 { 
+      text-align: center; 
+      color: #2c3e50; 
+      margin-bottom: 20px; 
+    }
+    .login-footer { 
+      text-align: center; 
+      margin-top: 20px; 
+      font-size: 12px; 
+      color: #777; 
+    }
+    .logout-btn { 
+      position: absolute; 
+      top: 20px; 
+      right: 20px; 
+      background: #e74c3c; 
+      padding: 8px 15px; 
+    }
+    .logout-btn:hover { 
+      background: #c0392b; 
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- Ekran logowania -->
+  <div id="login-screen">
+    <div class="login-container">
+      <h2>Newburgh Foods</h2>
+      <p style="text-align: center; color: #3498db; font-weight: 600;">Technical Loss Investigation System</p>
+      <label>Password:
+        <input type="password" id="login-password" placeholder="Enter password">
+      </label>
+      <label style="display: flex; align-items: center; margin-top: 15px;">
+        <input type="checkbox" id="remember-me" style="width: auto; margin-right: 10px;">
+        Remember me
+      </label>
+      <button id="login-btn" style="width: 100%; margin-top: 20px;">Login</button>
+      <div class="login-footer">
+        Issue date: 03.09.2025 | v1 | Wiktor Siuta
+      </div>
+      <div id="login-status" style="margin-top: 15px; color: #e74c3c; text-align: center;"></div>
+    </div>
+  </div>
+
+  <div class="container" id="app-container" style="display: none;">
     <!-- Header -->
     <div class="header">
       <h1>Newburgh Foods</h1>
       <p>Technical Loss Investigation System</p>
       <div class="sub-header">Issue date: 03.09.2025 | v1 | Wiktor Siuta</div>
     </div>
+
+    <button class="logout-btn" id="logout-btn">Logout</button>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -261,6 +325,44 @@
 
   <!-- JavaScript -->
   <script>
+    // Sprawdzenie czy użytkownik jest już zalogowany
+    function checkAuth() {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      
+      if (isLoggedIn && rememberMe) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+      }
+    }
+    
+    // Funkcja logowania
+    document.getElementById('login-btn').addEventListener('click', function() {
+      const password = document.getElementById('login-password').value;
+      const rememberMe = document.getElementById('remember-me').checked;
+      
+      if (password === 'Newburgh1') {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('rememberMe', rememberMe);
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+      } else {
+        document.getElementById('login-status').textContent = '❌ Incorrect password. Please try again.';
+      }
+    });
+    
+    // Funkcja wylogowania
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('isLoggedIn');
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-container').style.display = 'none';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-status').textContent = '';
+    });
+    
+    // Sprawdź autoryzację przy załadowaniu strony
+    checkAuth();
+    
     function activateTab(tabName) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
