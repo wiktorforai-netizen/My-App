@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Technical Loss Investigation - Newburgh Foods</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f5f7fa; color: #333; }
+    .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { color: #2c3e50; margin: 0; font-size: 28px; }
+    .header p { margin: 5px 0 0; color: #3498db; font-weight: 600; }
+    .sub-header { font-size: 12px; color: #777; margin-top: 10px; }
+
+    .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+    .tab { padding: 12px 24px; cursor: pointer; background: #f1f1f1; margin-right: 5px; border-radius: 8px 8px 0 0; font-weight: 500; }
+    .tab.active { background: #3498db; color: white; }
+    .tab-content { display: none; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .tab-content.active { display: block; }
+
+    label { display: block; margin: 12px 0 5px; font-weight: 500; }
+    input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    textarea { min-height: 100px; resize: vertical; }
+    .team-checkbox { margin: 8px 0; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #f9f9f9; }
+    .section h3 { margin: 0 0 10px 0; color: #3498db; }
+    button { background: #3498db; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 15px; }
+    button:hover { background: #2980b9; }
+    .status { margin: 15px 0; padding: 12px; background: #e3f2fd; border-radius: 6px; font-size: 14px; }
+    .history-item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+    .history-item h4 { margin: 0 0 10px 0; color: #2c3e50; }
+    .history-item small { color: #777; }
+    .hidden { display: none; }
+    .footer { text-align: center; margin-top: 40px; color: #888; font-size: 12px; }
+    .link-help { font-size: 12px; color: #555; margin-top: 5px; }
+    .pdf-export { background: #27ae60; }
+    .pdf-export:hover { background: #219653; }
+    .delete-btn, .edit-btn, .copy-link-hist { padding: 8px 12px; font-size: 14px; margin-left: 5px; }
+    .delete-btn { background: #e74c3c; }
+    .delete-btn:hover { background: #c0392b; }
+    .edit-btn { background: #f39c12; }
+    .edit-btn:hover { background: #d35400; }
+    .copy-link-hist { background: #3498db; color: white; border: none; }
+    .copy-link-hist:hover { background: #2980b9; }
+    .btn-small { padding: 6px 10px; font-size: 14px; }
+
+    /* Nowe style dla checkboxów w dwóch kolumnach */
+    .teams-container { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 10px; 
+      margin-top: 15px;
+    }
+    .team-checkbox { 
+      display: flex; 
+      align-items: center; 
+      padding: 8px; 
+      background: #f9f9f9; 
+      border-radius: 6px; 
+      border: 1px solid #eee;
+    }
+    .team-checkbox input[type="checkbox"] { 
+      width: auto; 
+      margin-right: 10px; 
+    }
+    @media (max-width: 768px) {
+      .teams-container { 
+        grid-template-columns: 1fr; 
+      }
+    }
+    
+    .sdrive-link { 
+      display: flex; 
+      align-items: center; 
+      margin: 10px 0; 
+    }
+    .sdrive-link input { 
+      flex: 1; 
+      margin-right: 10px; 
+    }
+    
+    /* Styl dla ekranu logowania */
+    #login-screen { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: #2c3e50; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+    }
+    .login-container { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px; 
+      width: 350px; 
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    }
+    .login-container h2 { 
+      text-align: center; 
+      color: #2c3e50; 
+      margin-bottom: 20px; 
+    }
+    .login-footer { 
+      text-align: center; 
+      margin-top: 20px; 
+      font-size: 12px; 
+      color: #777; 
+    }
+    .logout-btn { 
+      position: absolute; 
+      top: 20px; 
+      right: 20px; 
+      background: #e74c3c; 
+      padding: 8px 15px; 
+    }
+    .logout-btn:hover { 
+      background: #c0392b; 
+    }
+  </style>
+</head>
+<body>
+  <!-- Ekran logowania -->
+  <div id="login-screen">
+    <div class="login-container">
+      <h2>Newburgh Foods</h2>
+      <p style="text-align: center; color: #3498db; font-weight: 600;">Technical Loss Investigation System</p>
+      <label>Password:
+        <input type="password" id="login-password" placeholder="Enter password">
+      </label>
+      <label style="display: flex; align-items: center; margin-top: 15px;">
+        <input type="checkbox" id="remember-me" style="width: auto; margin-right: 10px;">
+        Remember me
+      </label>
+      <button id="login-btn" style="width: 100%; margin-top: 20px;">Login</button>
+      <div class="login-footer">
+        Issue date: 03.09.2025 | v1 | Wiktor Siuta
+      </div>
+      <div id="login-status" style="margin-top: 15px; color: #e74c3c; text-align: center;"></div>
+    </div>
+  </div>
+
+  <div class="container" id="app-container" style="display: none;">
+    <!-- Header -->
+    <div class="header">
+      <h1>Newburgh Foods</h1>
+      <p>Technical Loss Investigation System</p>
+      <div class="sub-header">Issue date: 03.09.2025 | v1 | Wiktor Siuta</div>
+    </div>
+
+    <button class="logout-btn" id="logout-btn">Logout</button>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="main">Main Issue</div>
+      <div class="tab" data-tab="todo">Investigations To-Do</div>
+      <div class="tab" data-tab="investigation">Investigation Form</div>
+      <div class="tab" data-tab="history">History & Archive</div>
+    </div>
+
+    <!-- 1. Main Issue -->
+    <div id="main" class="tab-content active">
+      <h2>Main Issue</h2>
+      <label>Date of Incident:
+        <input type="date" id="incidentDate" required>
+      </label>
+      <label>Batch Number:
+        <input type="text" id="batchNumber" placeholder="e.g. B12345" required>
+      </label>
+      <label>Product Code:
+        <input type="text" id="productCode" placeholder="e.g. KFC-001">
+      </label>
+      <label>Product Name:
+        <input type="text" id="productName" placeholder="e.g. Chicken Fillet">
+      </label>
+      <label>Loss Percentage (%):
+        <input type="number" step="0.1" id="dropPercentage" required>
+      </label>
+      <label>Description of Issue:
+        <textarea id="description" placeholder="What happened? Where? When?"></textarea>
+      </label>
+
+      <label>S:Drive Path:
+        <input type="text" id="sDrivePath" placeholder="e.g. \\sdrive\Production\2025\Report_123">
+        <small class="link-help">
+          Copy and paste into <strong>Win + R</strong> to open.
+          <button class="copy-link" onclick="copySDrivePath()">📋 Copy</button>
+        </small>
+      </label>
+
+      <h3>Teams Required to Respond:</h3>
+      <div class="teams-container">
+        <label class="team-checkbox"><input type="checkbox" value="microwave"> Microwave and Debox Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="tumble"> Tumble Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="kfc"> KFC Block Pack Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="iqf"> IQF Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="icut"> iCut Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="gea"> GEA Packing Machine Team</label>
+        <label class="team-checkbox"><input type="checkbox" value="packing"> Packing Room Team</label>
+      </div>
+
+      <button id="saveMainIssue">Save & Add to To-Do List</button>
+      <div class="status" id="mainStatus"></div>
+    </div>
+
+    <!-- 2. To-Do List -->
+    <div id="todo" class="tab-content">
+      <h2>Investigations To-Do</h2>
+      <p>Click on a case to start the investigation.</p>
+      <div id="todoList">
+        <p>No pending investigations.</p>
+      </div>
+    </div>
+
+    <!-- 3. Investigation Form -->
+    <div id="investigation" class="tab-content">
+      <h2>Investigation Form</h2>
+      <p><strong>Batch:</strong> <span id="inv-batch"></span> | <strong>Date:</strong> <span id="inv-date"></span></p>
+
+      <!-- Team Sections -->
+      <div id="inv-microwave" class="section hidden">
+        <h3>🔧 Microwave and Debox Team</h3>
+        <label>Name:
+          <input type="text" name="microwave_person">
+        </label>
+        <label>Observations:
+          <textarea name="microwave_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-tumble" class="section hidden">
+        <h3>🔧 Tumble Team</h3>
+        <label>Name:
+          <input type="text" name="tumble_person">
+        </label>
+        <label>Observations:
+          <textarea name="tumble_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-kfc" class="section hidden">
+        <h3>🔧 KFC Block Pack Team</h3>
+        <label>Name:
+          <input type="text" name="kfc_person">
+        </label>
+        <label>Observations:
+          <textarea name="kfc_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-iqf" class="section hidden">
+        <h3>🔧 IQF Team</h3>
+        <label>Name:
+          <input type="text" name="iqf_person">
+        </label>
+        <label>Observations:
+          <textarea name="iqf_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-icut" class="section hidden">
+        <h3>🔧 iCut Team</h3>
+        <label>Name:
+          <input type="text" name="icut_person">
+        </label>
+        <label>Observations:
+          <textarea name="icut_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-gea" class="section hidden">
+        <h3>🔧 GEA Packing Machine Team</h3>
+        <label>Name:
+          <input type="text" name="gea_person">
+        </label>
+        <label>Observations:
+          <textarea name="gea_obs"></textarea>
+        </label>
+      </div>
+
+      <div id="inv-packing" class="section hidden">
+        <h3>🔧 Packing Room Team</h3>
+        <label>Name:
+          <input type="text" name="packing_person">
+        </label>
+        <label>Observations:
+          <textarea name="packing_obs"></textarea>
+        </label>
+      </div>
+
+      <h3>Corrective Actions <span class="for-office">(for office use only)</span></h3>
+      <label>
+        <textarea id="correctiveActions"></textarea>
+      </label>
+      <label>Status:
+        <select id="finalStatus">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="closed">Closed</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="teamNotified"> Team notified</label>
+
+      <button id="saveInvestigation">Save to Archive</button>
+      <button id="exportToPDF" class="pdf-export">📤 Export to PDF</button>
+      <div class="status" id="invStatus"></div>
+    </div>
+
+    <!-- 4. History & Archive -->
+    <div id="history" class="tab-content">
+      <h2>History & Archive</h2>
+      <div id="historyList">
+        <p>No investigations recorded.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      Newburgh Foods – Technical Loss Investigation System | © 2025
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Sprawdzenie czy użytkownik jest już zalogowany
+    function checkAuth() {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      
+      if (isLoggedIn && rememberMe) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+      }
+    }
+    
+    // Funkcja logowania
+    document.getElementById('login-btn').addEventListener('click', function() {
+      const password = document.getElementById('login-password').value;
+      const rememberMe = document.getElementById('remember-me').checked;
+      
+      if (password === 'Newburgh1') {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('rememberMe', rememberMe);
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+      } else {
+        document.getElementById('login-status').textContent = '❌ Incorrect password. Please try again.';
+      }
+    });
+    
+    // Funkcja wylogowania
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('isLoggedIn');
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-container').style.display = 'none';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-status').textContent = '';
+    });
+    
+    // Sprawdź autoryzację przy załadowaniu strony
+    checkAuth();
+    
+    function activateTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+      if (tabName === 'todo') loadTodo();
+      if (tabName === 'history') loadHistory();
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => activateTab(tab.dataset.tab));
+    });
+
+    let reports = JSON.parse(localStorage.getItem('techInvestigations') || '[]');
+    let openCases = JSON.parse(localStorage.getItem('openCases') || '[]');
+    let currentCaseId = null;
+    let isEditing = false;
+
+    // Zapisz Main Issue
+    document.getElementById('saveMainIssue').addEventListener('click', () => {
+      const date = document.getElementById('incidentDate').value;
+      const batch = document.getElementById('batchNumber').value;
+      const productCode = document.getElementById('productCode').value;
+      const productName = document.getElementById('productName').value;
+      const drop = document.getElementById('dropPercentage').value;
+      const desc = document.getElementById('description').value;
+      const sDrivePath = document.getElementById('sDrivePath').value;
+      const selectedTeams = Array.from(document.querySelectorAll('input[value]:checked')).map(cb => cb.value);
+
+      if (!date || !batch || !drop) {
+        document.getElementById('mainStatus').innerHTML = "❌ Please fill in all required fields.";
+        return;
+      }
+
+      const newCase = {
+        id: 'case-' + Date.now(),
+        incidentDate: date,
+        batchNumber: batch,
+        productCode,
+        productName,
+        dropPercentage: parseFloat(drop),
+        description: desc,
+        sDrivePath, // Zapisanie ścieżki S:Drive
+        teams: selectedTeams,
+        createdAt: new Date().toISOString()
+      };
+
+      openCases.unshift(newCase);
+      localStorage.setItem('openCases', JSON.stringify(openCases));
+
+      document.getElementById('mainStatus').innerHTML = `✅ Case added to To-Do list.`;
+      loadTodo();
+      activateTab('todo');
+      resetMainIssueForm();
+    });
+
+    // Czyść formularz
+    function resetMainIssueForm() {
+      document.getElementById('incidentDate').value = '';
+      document.getElementById('batchNumber').value = '';
+      document.getElementById('productCode').value = '';
+      document.getElementById('productName').value = '';
+      document.getElementById('dropPercentage').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('sDrivePath').value = '';
+      document.querySelectorAll('.team-checkbox input').forEach(cb => cb.checked = false);
+    }
+
+    // Załaduj To-Do
+    function loadTodo() {
+      const container = document.getElementById('todoList');
+      container.innerHTML = '';
+      if (openCases.length === 0) {
+        container.innerHTML = '<p>No pending investigations.</p>';
+        return;
+      }
+      openCases.forEach(caseItem => {
+        const date = new Date(caseItem.incidentDate).toLocaleDateString('en-GB');
+        const item = document.createElement('div');
+        item.className = 'todo-item';
+        item.innerHTML = `
+          <h4>Batch: ${caseItem.batchNumber}</h4>
+          <p><strong>Date:</strong> ${date} | <strong>Loss:</strong> ${caseItem.dropPercentage}%</p>
+          <p><strong>Product:</strong> ${caseItem.productName || caseItem.productCode}</p>
+          <p><strong>Teams:</strong> ${caseItem.teams.join(', ')}</p>
+          <button class="btn-small" onclick="startInvestigation('${caseItem.id}')">Start Investigation</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Start Investigation
+    window.startInvestigation = function(id) {
+      const caseItem = openCases.find(c => c.id === id);
+      if (!caseItem) return;
+      currentCaseId = id;
+      document.getElementById('inv-batch').textContent = caseItem.batchNumber;
+      document.getElementById('inv-date').textContent = new Date(caseItem.incidentDate).toLocaleDateString('en-GB');
+      document.querySelectorAll('.section[id^="inv-"]').forEach(el => el.classList.add('hidden'));
+      caseItem.teams.forEach(team => {
+        document.getElementById(`inv-${team}`).classList.remove('hidden');
+      });
+      isEditing = false;
+      activateTab('investigation');
+    };
+
+    // Kopiuj S:Drive Path
+    window.copySDrivePath = function() {
+      const path = document.getElementById('sDrivePath').value;
+      if (!path) return alert("No path to copy.");
+      navigator.clipboard.writeText(path).then(() => {
+        alert("✅ Path copied! Press Win+R and paste to open.");
+      }).catch(err => {
+        console.error('Copy failed', err);
+        alert("Could not copy. Please select and copy manually.");
+      });
+    };
+
+    // Save to Archive
+    document.getElementById('saveInvestigation').addEventListener('click', () => {
+      const caseItem = openCases.find(c => c.id === currentCaseId);
+      if (!caseItem) return;
+      
+      const data = { ...caseItem };
+      document.querySelectorAll('[name]').forEach(input => {
+        if (input.value) data[input.name] = input.value;
+      });
+      data.correctiveActions = document.getElementById('correctiveActions').value;
+      data.status = document.getElementById('finalStatus').value;
+      data.teamNotified = document.getElementById('teamNotified').checked;
+      data.closedAt = new Date().toISOString();
+
+      reports.unshift(data);
+      openCases = openCases.filter(c => c.id !== currentCaseId);
+      
+      localStorage.setItem('openCases', JSON.stringify(openCases));
+      localStorage.setItem('techInvestigations', JSON.stringify(reports));
+      
+      document.getElementById('invStatus').innerHTML = "✅ Saved to archive!";
+      setTimeout(() => activateTab('history'), 1000);
+    });
+
+    // Load History
+    function loadHistory() {
+      const container = document.getElementById('historyList');
+      container.innerHTML = '';
+      if (reports.length === 0) {
+        container.innerHTML = '<p>No investigations recorded.</p>';
+        return;
+      }
+      reports.forEach((report, index) => {
+        const date = new Date(report.incidentDate).toLocaleDateString('en-GB');
+        const createdAt = new Date(report.createdAt).toLocaleString('en-GB');
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <h4>Batch: ${report.batchNumber} | Loss: ${report.dropPercentage}%</h4>
+          <p><strong>Date:</strong> ${date} | <strong>Created:</strong> ${createdAt}</p>
+          <p><strong>Product:</strong> ${report.productName || report.productCode || '–'}</p>
+          <p><strong>Description:</strong> ${report.description || '–'}</p>
+          <div class="sdrive-link">
+            <strong>S:Drive Path:</strong>
+            <input type="text" value="${report.sDrivePath || '–'}" readonly>
+            <button class="copy-link-hist" onclick="copyPathFromHistory('${report.sDrivePath}')">📋 Copy</button>
+          </div>
+          <p><strong>Status:</strong> ${getStatusLabel(report.status)}</p>
+          <button class="delete-btn" onclick="deleteReport(${index})">Delete</button>
+          <button class="edit-btn" onclick="editReport(${index})">Edit</button>
+          <button onclick="viewAsPDF(${index})">View as PDF</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function getStatusLabel(status) {
+      return { open: "Open", in_progress: "In Progress", closed: "Closed" }[status] || status;
+    }
+
+    // Copy S:Drive Path from History
+    window.copyPathFromHistory = function(path) {
+      if (!path || path === '–') return alert("No path to copy.");
+      navigator.clipboard.writeText(path).then(() => {
+        alert("✅ S:Drive path copied!");
+      });
+    };
+
+    // Delete report
+    window.deleteReport = function(index) {
+      const password = prompt("Enter password to delete:");
+      if (password === "3214") {
+        reports.splice(index, 1);
+        localStorage.setItem('techInvestigations', JSON.stringify(reports));
+        loadHistory();
+        alert("✅ Report deleted.");
+      } else {
+        alert("❌ Wrong password.");
+      }
+    };
+
+    // Edit report
+    window.editReport = function(index) {
+      const report = reports[index];
+      currentCaseId = `edit-${index}`;
+      isEditing = true;
+      document.getElementById('inv-batch').textContent = report.batchNumber;
+      document.getElementById('inv-date').textContent = new Date(report.incidentDate).toLocaleDateString('en-GB');
+      document.querySelectorAll('.section[id^="inv-"]').forEach(el => el.classList.add('hidden'));
+      if (report.teams) report.teams.forEach(team => {
+        document.getElementById(`inv-${team}`).classList.remove('hidden');
+      });
+      fillField('microwave_person', report.microwave_person);
+      fillField('microwave_obs', report.microwave_obs);
+      fillField('tumble_person', report.tumble_person);
+      fillField('tumble_obs', report.tumble_obs);
+      fillField('kfc_person', report.kfc_person);
+      fillField('kfc_obs', report.kfc_obs);
+      fillField('iqf_person', report.iqf_person);
+      fillField('iqf_obs', report.iqf_obs);
+      fillField('icut_person', report.icut_person);
+      fillField('icut_obs', report.icut_obs);
+      fillField('gea_person', report.gea_person);
+      fillField('gea_obs', report.gea_obs);
+      fillField('packing_person', report.packing_person);
+      fillField('packing_obs', report.packing_obs);
+      document.getElementById('correctiveActions').value = report.correctiveActions || '';
+      document.getElementById('finalStatus').value = report.status || 'open';
+      document.getElementById('teamNotified').checked = report.teamNotified || false;
+      activateTab('investigation');
+    };
+
+    function fillField(name, value) {
+      const el = document.querySelector(`[name="${name}"]`);
+      if (el) el.value = value || '';
+    }
+
+    // Export to PDF
+    window.viewAsPDF = async function(index) {
+      const report = reports[index];
+      const date = new Date(report.incidentDate).toLocaleDateString('en-GB');
+      const generated = new Date().toLocaleString('en-GB');
+      const pdfContent = `
+        <div style="font-family: Arial; padding: 30px; max-width: 900px; margin: 0 auto; line-height: 1.6;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #2c3e50; margin: 0;">Newburgh Foods</h1>
+            <p style="color: #3498db; font-weight: 600;">Technical Loss Investigation Report</p>
+            <p style="font-size: 12px; color: #777;">Generated: ${generated} | v1 | Wiktor Siuta</p>
+          </div>
+          <hr>
+          <p><strong>Date of Incident:</strong> ${date}</p>
+          <p><strong>Batch Number:</strong> ${report.batchNumber}</p>
+          <p><strong>Product Code:</strong> ${report.productCode || '–'}</p>
+          <p><strong>Product Name:</strong> ${report.productName || '–'}</p>
+          <p><strong>Loss Percentage:</strong> ${report.dropPercentage}%</p>
+          <p><strong>Description:</strong> ${report.description || '–'}</p>
+          <p><strong>S:Drive Path:</strong> ${report.sDrivePath || '–'}</p>
+          <h3 style="color: #2c3e50; margin-top: 20px;">Team Responses</h3>
+          ${renderTeamSection('Microwave and Debox Team', report.microwave_person, report.microwave_obs)}
+          ${renderTeamSection('Tumble Team', report.tumble_person, report.tumble_obs)}
+          ${renderTeamSection('KFC Block Pack Team', report.kfc_person, report.kfc_obs)}
+          ${renderTeamSection('IQF Team', report.iqf_person, report.iqf_obs)}
+          ${renderTeamSection('iCut Team', report.icut_person, report.icut_obs)}
+          ${renderTeamSection('GEA Packing Machine Team', report.gea_person, report.gea_obs)}
+          ${renderTeamSection('Packing Room Team', report.packing_person, report.packing_obs)}
+          <h3 style="color: #2c3e50; margin-top: 20px;">Corrective Actions (for office use only)</h3>
+          <p>${report.correctiveActions || '–'}</p>
+          <p><strong>Status:</strong> ${getStatusLabel(report.status)}</p>
+          <p><strong>Team Notified:</strong> ${report.teamNotified ? 'Yes' : 'No'}</p>
+          <p style="color: #777; font-size: 12px; margin-top: 30px;">© Newburgh Foods – Internal Use Only</p>
+        </div>
+      `;
+      const element = document.createElement('div');
+      element.innerHTML = pdfContent;
+      document.body.appendChild(element);
+      const opt = {
+        margin: 1,
+        filename: `Investigation_${report.batchNumber}_${date}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
+      };
+      await html2pdf().from(element).set(opt).save();
+      document.body.removeChild(element);
+    };
+
+    function renderTeamSection(teamName, person, obs) {
+      if (!person && !obs) return '';
+      return `
+        <div style="margin: 15px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px;">
+          <strong>${teamName}</strong><br>
+          <em>${person || '–'}</em><br>
+          <small><strong>Observations:</strong> ${obs || '–'}</small>
+        </div>
+      `;
+    }
+
+    if (document.getElementById('history').classList.contains('active')) loadHistory();
+  </script>
+</body>
+</html>
